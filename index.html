@@ -177,7 +177,7 @@
 
     // For rate, prefer columns that include "_SUP"
     if (upPrefix === "RATE_") {
-      const sup = cands.filter(h => /_SUP\b/i.test(String(h)) || /\bSUP\b/i.test(String(h)));
+      const sup = cands.filter(h => /(^|_)SUP(_|$)/i.test(String(h)));
       if (sup.length) cands = sup;
     }
 
@@ -185,23 +185,29 @@
     return cands[0];
   }
 
-  // Combined: prefer Total columns
+  // --- FIX: robust "Total" detection (underscore is a word char, so \bTotal\b fails on _Total_)
+  function isTotalCol(h) {
+    return /(^|_)Total(_|$)/i.test(String(h));
+  }
+
+  // Combined: prefer Total columns (FIXED)
   function pickCombinedMetricCol(headers, prefix, combinedKey) {
     const upPrefix = prefix.toUpperCase();
     let cands = headers.filter(h => String(h).toUpperCase().startsWith(upPrefix));
+    if (!cands.length) return null;
 
-    let total = cands.filter(h => /\bTotal\b/i.test(String(h)) || /_Total\b/i.test(String(h)));
+    // Prefer Total columns first
+    let total = cands.filter(h => isTotalCol(h));
     if (total.length) cands = total;
     else {
+      // Fallback: if you ever have combinedKey-stamped columns, prefer those
       const want = `_${combinedKey}`;
       const comb = cands.filter(h => String(h).includes(want));
       if (comb.length) cands = comb;
     }
 
-    if (!cands.length) return null;
-
     if (upPrefix === "RATE_") {
-      const sup = cands.filter(h => /_SUP\b/i.test(String(h)) || /\bSUP\b/i.test(String(h)));
+      const sup = cands.filter(h => /(^|_)SUP(_|$)/i.test(String(h)));
       if (sup.length) cands = sup;
     }
 
@@ -209,23 +215,27 @@
     return cands[0];
   }
 
-  // Suppress flag column for a period: starts with Suppress_, includes _YYYY_YYYY
+  // Suppress flag column for a period:
+  // Your CSV includes a typo "Suppres_2019_2023_Rate" (missing an 's'),
+  // so match both "Suppress_" and "Suppres_" to be resilient.
   function pickSuppressCol(headers, periodKey) {
     const want = `_${periodKey}`;
-    let cands = headers.filter(h => /^Suppress_/i.test(String(h)) && String(h).includes(want));
+    let cands = headers.filter(h => /^Suppres?s_/i.test(String(h)) && String(h).includes(want));
     if (!cands.length) return null;
 
-    const rateLike = cands.filter(h => /\bRate\b/i.test(String(h)));
+    const rateLike = cands.filter(h => /(^|_)Rate(_|$)/i.test(String(h)) || /\bRate\b/i.test(String(h)));
     if (rateLike.length) cands = rateLike;
 
     cands.sort((a,b) => b.length - a.length);
     return cands[0];
   }
 
+  // Combined suppress col (FIXED Total detection + typo tolerance)
   function pickCombinedSuppressCol(headers, combinedKey) {
-    let cands = headers.filter(h => /^Suppress_/i.test(String(h)));
+    let cands = headers.filter(h => /^Suppres?s_/i.test(String(h)));
+    if (!cands.length) return null;
 
-    let total = cands.filter(h => /\bTotal\b/i.test(String(h)) || /_Total\b/i.test(String(h)));
+    let total = cands.filter(h => isTotalCol(h));
     if (total.length) cands = total;
     else {
       const want = `_${combinedKey}`;
@@ -233,9 +243,7 @@
       if (comb.length) cands = comb;
     }
 
-    if (!cands.length) return null;
-
-    const rateLike = cands.filter(h => /\bRate\b/i.test(String(h)));
+    const rateLike = cands.filter(h => /(^|_)Rate(_|$)/i.test(String(h)) || /\bRate\b/i.test(String(h)));
     if (rateLike.length) cands = rateLike;
 
     cands.sort((a,b) => b.length - a.length);
@@ -272,10 +280,16 @@
     opt.textContent = `${p.start}–${p.end}`;
     $period.appendChild(opt);
   }
-  const combinedOpt = document.createElement("option");
-  combinedOpt.value = combinedKey;
-  combinedOpt.textContent = `${first.start}–${last.end} (Combined time period)`;
-  $period.appendChild(combinedOpt);
+
+  // Only add combined option if we truly have multiple periods
+  if (periods.length > 1) {
+    const combinedOpt = document.createElement("option");
+    combinedOpt.value = combinedKey;
+    combinedOpt.textContent = `${first.start}–${last.end} (Combined time period)`;
+    $period.appendChild(combinedOpt);
+  }
+
+  // Default to first period
   $period.value = periods[0].key;
 
   // Build index by town
@@ -299,6 +313,9 @@
   const suppressCols = {};
   for (const p of periods) suppressCols[p.key] = pickSuppressCol(headers, p.key);
   suppressCols[combinedKey] = pickCombinedSuppressCol(headers, combinedKey);
+
+  // Optional: leave this if you want to debug from console
+  // window.__dbg = { periods, combinedKey, metricCols, suppressCols, headers };
 
   function getRaw(row, metricKey, periodKey) {
     const col = metricCols?.[metricKey]?.[periodKey];
