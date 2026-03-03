@@ -1,473 +1,459 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>RI Suicide Dashboard (Towns)</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RI Suicide Dashboard (Towns)</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <style>
-    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-    #wrap { display:grid; grid-template-columns:360px 1fr; height:100vh; }
-    #sidebar { padding:14px; border-right:1px solid #ddd; overflow:auto; }
-    #map { height:100vh; }
-    .title { font-weight:800; font-size:16px; margin-bottom:6px; }
-    .small { font-size:12px; color:#555; line-height:1.35; }
-    label { display:block; font-size:12px; color:#444; margin:12px 0 6px; }
-    select { width:100%; padding:8px; }
-    .legend { margin-top:14px; font-size:12px; }
-    .row { display:flex; align-items:center; gap:8px; margin:3px 0; }
-    .swatch { width:14px; height:14px; border:1px solid #999; flex:0 0 auto; display:inline-block; }
+<style>
+body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
 
-    /* Legend hatch: bottom-left -> top-right */
-    .swatch.hatch {
-      background: repeating-linear-gradient(
-        -45deg,
-        #b0b0b0 0px,
-        #b0b0b0 2px,
-        #f2f2f2 2px,
-        #f2f2f2 6px
-      );
-    }
+#wrap { display:grid; grid-template-columns:360px 1fr; height:100vh; }
 
-    .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; margin-top:10px; }
-  </style>
+#sidebar {
+  padding:14px;
+  border-right:1px solid #ddd;
+  overflow:auto;
+}
+
+#map { height:100vh; }
+
+.title { font-weight:800; font-size:16px; margin-bottom:6px; }
+
+.small {
+  font-size:12px;
+  color:#555;
+  line-height:1.35;
+}
+
+label {
+  display:block;
+  font-size:12px;
+  color:#444;
+  margin:12px 0 6px;
+}
+
+select { width:100%; padding:8px; }
+
+.legend { margin-top:14px; font-size:12px; }
+
+.row { display:flex; align-items:center; gap:8px; margin:3px 0; }
+
+.swatch {
+  width:14px;
+  height:14px;
+  border:1px solid #999;
+  flex:0 0 auto;
+  display:inline-block;
+}
+
+/* hatch legend */
+.swatch.hatch {
+  background: repeating-linear-gradient(
+    -45deg,
+    #b0b0b0 0px,
+    #b0b0b0 2px,
+    #f2f2f2 2px,
+    #f2f2f2 6px
+  );
+}
+
+.pill {
+  display:inline-block;
+  padding:2px 8px;
+  border:1px solid #ddd;
+  border-radius:999px;
+  font-size:12px;
+  margin-top:10px;
+}
+
+/* data source */
+
+.datasource{
+  margin-top:14px;
+  font-size:12px;
+  color:#444;
+  line-height:1.4;
+}
+
+/* learn more */
+
+.learnmore{
+  margin-top:14px;
+  border-top:1px solid #ddd;
+  padding-top:10px;
+}
+
+.learnmore summary{
+  cursor:pointer;
+  font-weight:600;
+  font-size:13px;
+}
+
+.learnmore p{
+  font-size:12px;
+  color:#444;
+  line-height:1.4;
+  margin-top:6px;
+}
+
+/* RIDOH logo */
+
+.logo-wrap{
+  margin-top:20px;
+  text-align:center;
+}
+
+.logo-wrap img{
+  max-width:220px;
+  width:100%;
+  height:auto;
+}
+
+</style>
 </head>
 
 <body>
+
 <div id="wrap">
-  <div id="sidebar">
-    <div class="title">Rhode Island Suicide Cases Dashboard</div>
-    <div class="small">
-      Suppressed <b>rates</b> are shown as <b>grey hatched</b>. Cases <b>&lt;5</b> are <b>very light blue</b>.<br/><br/>
-      * — Rate is reported but should be interpreted with caution per RIDOH's small number reporting policy as the relative standard error is between 20% and 30%.
-    </div>
 
-    <label for="period">Time period</label>
-    <select id="period"></select>
+<div id="sidebar">
 
-    <label for="metric">Color by</label>
-    <select id="metric"></select>
+<div class="title">Rhode Island Suicide Cases Dashboard</div>
 
-    <div id="legend" class="legend"></div>
-    <div id="status" class="pill">Loading…</div>
-  </div>
+<div class="small">
+Suppressed <b>rates</b> are shown as <b>grey hatched</b>.  
+Cases <b>&lt;5</b> are <b>very light blue</b>.<br><br>
 
-  <div id="map"></div>
+* — Rate is reported but should be interpreted with caution per
+RIDOH's small number reporting policy as the relative standard error
+is between 20% and 30%.
 </div>
 
+<label for="period">Time period</label>
+<select id="period"></select>
+
+<label for="metric">Color by</label>
+<select id="metric"></select>
+
+<div id="legend" class="legend"></div>
+
+<div id="status" class="pill">Loading…</div>
+
+<div class="datasource">
+<b>Data source:</b> Suicide counts from the Center for Health Data & Analysis,
+Division of Data Analytics, Vital Records, & Health Systems Policy.
+</div>
+
+<details class="learnmore">
+<summary>Learn more…</summary>
+
+<p>
+This map shows suicide deaths across Rhode Island municipalities for
+different time periods. Users can explore deaths by municipality of injury,
+municipality of residence, or the suicide rate per 100,000 population.
+</p>
+
+<p>
+The color scale represents ranges of values to help visualize geographic
+patterns across towns.
+</p>
+
+<p>
+Rates may be suppressed or marked with an asterisk (*) when counts are
+small to protect confidentiality and ensure statistical reliability,
+consistent with RIDOH small number reporting policies.
+</p>
+
+<p>
+This visualization is intended to support public health awareness and
+should be interpreted alongside broader demographic and population
+context.
+</p>
+
+</details>
+
+<div class="logo-wrap">
+<img src="./ridoh_logo.png" alt="Rhode Island Department of Health Logo">
+</div>
+
+</div>
+
+<div id="map"></div>
+
+</div>
+
+
 <script>
+
 (async () => {
-  // Files (must be in same folder as this HTML unless you change these paths)
-  const GEOJSON_URL = "./RI_municipalities.geojson";
-  const CSV_URL = "./suicide_city_summary.csv";
-
-  // Join fields (change ONLY if your file field names differ)
-  const GEO_JOIN = "MUNI";  // GeoJSON: feature.properties.MUNI
-  const CSV_JOIN = "CITY";  // CSV column: CITY
-
-  // Metric definitions by PREFIX (no hardwired full column names)
-  const METRICS = {
-    inj:  { label: "Deaths by Municipality of Injury", prefix: "INJ_"  },
-    res:  { label: "Deaths by Municipality of Residence",   prefix: "RES_"  },
-    rate: { label: "Rate per 100,000 Population", prefix: "RATE_" }
-  };
-
-  // Palettes
-  const CASE_COLORS = ["#edf6ff", "#c6dbef", "#9ecae1", "#6baed6", "#2171b5"];
-  const RATE_COLORS = ["url(#grey-hatch)", "#dbe9f6", "#b7d3ee", "#86b6e0", "#4f94c7", "#1f5a96"];
-
-  const BORDER_COLOR = "#999";
-  const BORDER_WEIGHT = 1;
-
-  // UI elements
-  const $period = document.getElementById("period");
-  const $metric = document.getElementById("metric");
-  const $legend = document.getElementById("legend");
-  const $status = document.getElementById("status");
-
-  // Metric dropdown
-  for (const k of Object.keys(METRICS)) {
-    const opt = document.createElement("option");
-    opt.value = k;
-    opt.textContent = METRICS[k].label;
-    $metric.appendChild(opt);
-  }
-  $metric.value = "rate";
-
-  // Helpers
-  const norm = v => String(v ?? "").toUpperCase().trim();
-
-  function toNumberClean(raw) {
-    if (raw == null) return NaN;
-    const s = String(raw).trim();
-    if (!s) return NaN;
-    return Number(s.replace(/[^0-9.\-]/g, "")); // strips "*" etc
-  }
-
-  function isSuppRate(raw) {
-    // Treat non-numeric, empty, 0, or text like "Suppressed" as suppressed
-    const n = toNumberClean(raw);
-    return (!Number.isFinite(n) || n === 0);
-  }
-
-  function rateBin(raw) {
-    if (isSuppRate(raw)) return 0; // hatch
-    const n = toNumberClean(raw);
-    if (n > 0 && n <= 8.0) return 1;
-    if (n > 8.0 && n <= 9.9) return 2;
-    if (n >= 10.0 && n <= 11.0) return 3;
-    if (n > 11.0 && n <= 13.0) return 4;
-    return 5;
-  }
-
-  function caseBin(isCombined, v) {
-    if (v == null) return null;
-    if (isCombined) return v < 5 ? 0 : v <= 25 ? 1 : v <= 40 ? 2 : v <= 60 ? 3 : 4;
-    return v < 5 ? 0 : v <= 10 ? 1 : v <= 20 ? 2 : v <= 40 ? 3 : 4;
-  }
-
-  const caseLabels = isCombined =>
-    isCombined ? ["<5","5–25","26–40","41–60","Over 60"] : ["<5","5–10","11–20","21–40","Over 40"];
-  const rateLabels = ["Suppressed","0–8.0","8.1–9.9","10.0–11.0","11.0–13.00","Over 13"];
-
-  const fmtCase = raw => {
-    if (raw == null) return "—";
-    const s = String(raw).trim();
-    if (!s) return "—";
-    if (s === "<5") return "<5";
-    const n = Number(s);
-    return Number.isFinite(n) ? n.toFixed(0) : "—";
-  };
-
-  const fmtRate = raw => {
-    const n = toNumberClean(raw);
-    if (!Number.isFinite(n) || n === 0) return "Suppressed";
-    return n.toFixed(1);
-  };
-
-  // ---- Years detection
-  function extractPeriods(headers) {
-    const rx = /_(\d{4})_(\d{4})(?:_|$)/;
-    const map = new Map();
-    for (const h of headers) {
-      const m = String(h).match(rx);
-      if (m) {
-        const start = Number(m[1]), end = Number(m[2]);
-        map.set(`${start}_${end}`, { start, end });
-      }
-    }
-    return Array.from(map.entries())
-      .map(([key, v]) => ({ key, ...v }))
-      .sort((a,b) => (a.start-b.start) || (a.end-b.end));
-  }
-
-  // Select metric column for a period
-  function pickMetricCol(headers, prefix, periodKey) {
-    const want = `_${periodKey}`; // e.g. "_2014_2018"
-    const upPrefix = prefix.toUpperCase();
-
-    let cands = headers.filter(h =>
-      String(h).toUpperCase().startsWith(upPrefix) && String(h).includes(want)
-    );
-    if (!cands.length) return null;
-
-    // For rate, prefer columns that include "_SUP"
-    if (upPrefix === "RATE_") {
-      const sup = cands.filter(h => /(^|_)SUP(_|$)/i.test(String(h)));
-      if (sup.length) cands = sup;
-    }
-
-    cands.sort((a,b) => b.length - a.length);
-    return cands[0];
-  }
-
-  // --- FIX: robust "Total" detection (underscore is a word char, so \bTotal\b fails on _Total_)
-  function isTotalCol(h) {
-    return /(^|_)Total(_|$)/i.test(String(h));
-  }
-
-  // Combined: prefer Total columns (FIXED)
-  function pickCombinedMetricCol(headers, prefix, combinedKey) {
-    const upPrefix = prefix.toUpperCase();
-    let cands = headers.filter(h => String(h).toUpperCase().startsWith(upPrefix));
-    if (!cands.length) return null;
-
-    // Prefer Total columns first
-    let total = cands.filter(h => isTotalCol(h));
-    if (total.length) cands = total;
-    else {
-      // Fallback: if you ever have combinedKey-stamped columns, prefer those
-      const want = `_${combinedKey}`;
-      const comb = cands.filter(h => String(h).includes(want));
-      if (comb.length) cands = comb;
-    }
-
-    if (upPrefix === "RATE_") {
-      const sup = cands.filter(h => /(^|_)SUP(_|$)/i.test(String(h)));
-      if (sup.length) cands = sup;
-    }
-
-    cands.sort((a,b) => b.length - a.length);
-    return cands[0];
-  }
-
-  // Suppress flag column for a period:
-  // Your CSV includes a typo "Suppres_2019_2023_Rate" (missing an 's'),
-  // so match both "Suppress_" and "Suppres_" to be resilient.
-  function pickSuppressCol(headers, periodKey) {
-    const want = `_${periodKey}`;
-    let cands = headers.filter(h => /^Suppres?s_/i.test(String(h)) && String(h).includes(want));
-    if (!cands.length) return null;
-
-    const rateLike = cands.filter(h => /(^|_)Rate(_|$)/i.test(String(h)) || /\bRate\b/i.test(String(h)));
-    if (rateLike.length) cands = rateLike;
-
-    cands.sort((a,b) => b.length - a.length);
-    return cands[0];
-  }
-
-  // Combined suppress col (FIXED Total detection + typo tolerance)
-  function pickCombinedSuppressCol(headers, combinedKey) {
-    let cands = headers.filter(h => /^Suppres?s_/i.test(String(h)));
-    if (!cands.length) return null;
-
-    let total = cands.filter(h => isTotalCol(h));
-    if (total.length) cands = total;
-    else {
-      const want = `_${combinedKey}`;
-      const comb = cands.filter(h => String(h).includes(want));
-      if (comb.length) cands = comb;
-    }
-
-    const rateLike = cands.filter(h => /(^|_)Rate(_|$)/i.test(String(h)) || /\bRate\b/i.test(String(h)));
-    if (rateLike.length) cands = rateLike;
-
-    cands.sort((a,b) => b.length - a.length);
-    return cands[0];
-  }
-
-  // Load files
-  $status.textContent = "Loading files…";
-  const [geo, csvText] = await Promise.all([
-    fetch(GEOJSON_URL).then(r => { if(!r.ok) throw new Error("Could not load GeoJSON"); return r.json(); }),
-    fetch(CSV_URL).then(r => { if(!r.ok) throw new Error("Could not load CSV"); return r.text(); })
-  ]);
-
-  const parsed = Papa.parse(csvText, { header:true, dynamicTyping:false, skipEmptyLines:true });
-  const rows = parsed.data || [];
-  const headers = parsed.meta?.fields || (rows[0] ? Object.keys(rows[0]) : []);
-  if (!headers.length) throw new Error("CSV headers not found.");
-
-  // Periods from headers
-  const periods = extractPeriods(headers);
-  if (!periods.length) {
-    throw new Error("No periods found. Expected columns like INJ_CITY_2014_2018 etc.");
-  }
-
-  // Combined key = first start + last end
-  const first = periods[0], last = periods[periods.length - 1];
-  const combinedKey = `${first.start}_${last.end}`;
-
-  // Period dropdown
-  $period.innerHTML = "";
-  for (const p of periods) {
-    const opt = document.createElement("option");
-    opt.value = p.key;
-    opt.textContent = `${p.start}–${p.end}`;
-    $period.appendChild(opt);
-  }
-
-  // Only add combined option if we truly have multiple periods
-  if (periods.length > 1) {
-    const combinedOpt = document.createElement("option");
-    combinedOpt.value = combinedKey;
-    combinedOpt.textContent = `${first.start}–${last.end} (Combined time period)`;
-    $period.appendChild(combinedOpt);
-  }
-
-  // Default to first period
-  $period.value = periods[0].key;
-
-  // Build index by town
-  const dataIndex = {};
-  rows.forEach(r => {
-    const key = norm(r[CSV_JOIN]);
-    if (key) dataIndex[key] = r;
-  });
-
-  // Detect metric columns dynamically
-  const metricCols = {};
-  for (const mKey of Object.keys(METRICS)) {
-    metricCols[mKey] = {};
-    for (const p of periods) {
-      metricCols[mKey][p.key] = pickMetricCol(headers, METRICS[mKey].prefix, p.key);
-    }
-    metricCols[mKey][combinedKey] = pickCombinedMetricCol(headers, METRICS[mKey].prefix, combinedKey);
-  }
-
-  // Detect suppression flag columns dynamically
-  const suppressCols = {};
-  for (const p of periods) suppressCols[p.key] = pickSuppressCol(headers, p.key);
-  suppressCols[combinedKey] = pickCombinedSuppressCol(headers, combinedKey);
-
-  // Optional: leave this if you want to debug from console
-  // window.__dbg = { periods, combinedKey, metricCols, suppressCols, headers };
-
-  function getRaw(row, metricKey, periodKey) {
-    const col = metricCols?.[metricKey]?.[periodKey];
-    return col ? row?.[col] : undefined;
-  }
-
-  function rateNeedsCautionStar(row, periodKey) {
-    const col = suppressCols[periodKey];
-    if (!col) return false;
-    return Number(row?.[col]) === 2;
-  }
-
-  function fmtRateStar(row, periodKey, raw) {
-    const base = fmtRate(raw);
-    if (base === "Suppressed") return base;
-    return rateNeedsCautionStar(row, periodKey) ? (base + "*") : base;
-  }
-
-  // Map init
-  const map = L.map("map").setView([41.68, -71.55], 9);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(map);
-
-  // SVG renderer + hatch pattern (for url(#grey-hatch))
-  const renderer = L.svg().addTo(map);
-  (function ensureHatch(r) {
-    const svg = r._container;
-    let defs = svg.querySelector("defs");
-    if (!defs) {
-      defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-      svg.insertBefore(defs, svg.firstChild);
-    }
-    if (svg.querySelector("#grey-hatch")) return;
-
-    const ns = "http://www.w3.org/2000/svg";
-    const pat = document.createElementNS(ns, "pattern");
-    pat.setAttribute("id", "grey-hatch");
-    pat.setAttribute("patternUnits", "userSpaceOnUse");
-    pat.setAttribute("width", "8");
-    pat.setAttribute("height", "8");
-    pat.setAttribute("patternTransform", "rotate(45)");
-
-    const bg = document.createElementNS(ns, "rect");
-    bg.setAttribute("width","8"); bg.setAttribute("height","8"); bg.setAttribute("fill","#f2f2f2");
-
-    const ln = document.createElementNS(ns, "line");
-    ln.setAttribute("x1","0"); ln.setAttribute("y1","0"); ln.setAttribute("x2","0"); ln.setAttribute("y2","8");
-    ln.setAttribute("stroke","#b0b0b0"); ln.setAttribute("stroke-width","2");
-
-    pat.appendChild(bg);
-    pat.appendChild(ln);
-    defs.appendChild(pat);
-  })(renderer);
-
-  function labelForPeriod(periodKey) {
-    if (periodKey === combinedKey) return `${first.start}–${last.end}`;
-    const m = periodKey.match(/^(\d{4})_(\d{4})$/);
-    return m ? `${m[1]}–${m[2]}` : periodKey;
-  }
-
-  function buildLegend() {
-    const periodKey = $period.value;
-    const metricKey = $metric.value;
-    const isCombined = (periodKey === combinedKey);
-
-    let html = `<div style="font-weight:800;margin-bottom:8px;">Legend — ${METRICS[metricKey].label}</div>`;
-
-    if (metricKey === "rate") {
-      for (let i=0;i<rateLabels.length;i++) {
-        html += (i === 0)
-          ? `<div class="row"><span class="swatch hatch"></span>${rateLabels[i]}</div>`
-          : `<div class="row"><span class="swatch" style="background:${RATE_COLORS[i]}"></span>${rateLabels[i]}</div>`;
-      }
-    } else {
-      const labels = caseLabels(isCombined);
-      for (let i=0;i<labels.length;i++) {
-        html += `<div class="row"><span class="swatch" style="background:${CASE_COLORS[i]}"></span>${labels[i]}</div>`;
-      }
-    }
-    $legend.innerHTML = html;
-  }
-
-  function styleFeature(feature) {
-    const periodKey = $period.value;
-    const metricKey = $metric.value;
-    const isCombined = (periodKey === combinedKey);
-
-    const townKey = norm(feature.properties?.[GEO_JOIN]);
-    const row = dataIndex[townKey];
-
-    if (!row) return { color:"#aaa", weight:BORDER_WEIGHT, fillColor:"#eee", fillOpacity:1 };
-
-    const raw = getRaw(row, metricKey, periodKey);
-
-    if (metricKey === "rate") {
-      const i = rateBin(raw);
-      return { color:BORDER_COLOR, weight:BORDER_WEIGHT, fillColor:RATE_COLORS[i], fillOpacity:1 };
-    }
-
-    // cases: treat "<5" as lowest bin (light blue)
-    if (String(raw).trim() === "<5") {
-      return { color:BORDER_COLOR, weight:BORDER_WEIGHT, fillColor:CASE_COLORS[0], fillOpacity:1 };
-    }
-
-    const n = Number(String(raw ?? "").trim());
-    if (!Number.isFinite(n)) return { color:"#aaa", weight:BORDER_WEIGHT, fillColor:"#eee", fillOpacity:1 };
-
-    const i = caseBin(isCombined, n);
-    return { color:BORDER_COLOR, weight:BORDER_WEIGHT, fillColor:CASE_COLORS[i], fillOpacity:1 };
-  }
-
-  function popupHTML(feature) {
-    const periodKey = $period.value;
-    const town = feature.properties?.[GEO_JOIN] ?? "Unknown";
-    const row = dataIndex[norm(town)];
-    if (!row) return `<b>${town}</b><br/><i>No matching CSV row</i>`;
-
-    const injRaw  = getRaw(row, "inj",  periodKey);
-    const resRaw  = getRaw(row, "res",  periodKey);
-    const rateRaw = getRaw(row, "rate", periodKey);
-
-    return `
-      <b>${town}</b><br/>
-      Period: ${labelForPeriod(periodKey)}<br/>
-      ${METRICS.inj.label}: ${fmtCase(injRaw)}<br/>
-      ${METRICS.res.label}: ${fmtCase(resRaw)}<br/>
-      ${METRICS.rate.label}: ${fmtRateStar(row, periodKey, rateRaw)}
-    `;
-  }
-
-  let layer;
-  function render() {
-    buildLegend();
-    if (layer) layer.remove();
-    layer = L.geoJSON(geo, {
-      renderer,
-      style: styleFeature,
-      onEachFeature: (f, l) => l.bindPopup(popupHTML(f))
-    }).addTo(map);
-    $status.textContent = "Ready";
-  }
-
-  $period.addEventListener("change", render);
-  $metric.addEventListener("change", render);
-  render();
-
-})().catch(err => {
-  console.error(err);
-  document.getElementById("status").textContent = "Error (check console)";
+
+const GEOJSON_URL="./RI_municipalities.geojson";
+const CSV_URL="./suicide_city_summary.csv";
+
+const GEO_JOIN="MUNI";
+const CSV_JOIN="CITY";
+
+const METRICS={
+inj:{label:"Deaths by Municipality of Injury",prefix:"INJ_"},
+res:{label:"Deaths by Municipality of Residence",prefix:"RES_"},
+rate:{label:"Rate per 100,000 Population",prefix:"RATE_"}
+};
+
+const CASE_COLORS=["#edf6ff","#c6dbef","#9ecae1","#6baed6","#2171b5"];
+
+const RATE_COLORS=[
+"url(#grey-hatch)",
+"#dbe9f6",
+"#b7d3ee",
+"#86b6e0",
+"#4f94c7",
+"#1f5a96"
+];
+
+const BORDER_COLOR="#999";
+const BORDER_WEIGHT=1;
+
+const $period=document.getElementById("period");
+const $metric=document.getElementById("metric");
+const $legend=document.getElementById("legend");
+const $status=document.getElementById("status");
+
+for(const k of Object.keys(METRICS)){
+const opt=document.createElement("option");
+opt.value=k;
+opt.textContent=METRICS[k].label;
+$metric.appendChild(opt);
+}
+
+$metric.value="rate";
+
+const norm=v=>String(v??"").toUpperCase().trim();
+
+function toNumberClean(raw){
+if(raw==null) return NaN;
+const s=String(raw).trim();
+if(!s) return NaN;
+return Number(s.replace(/[^0-9.\-]/g,""));
+}
+
+function isSuppRate(raw){
+const n=toNumberClean(raw);
+return(!Number.isFinite(n)||n===0);
+}
+
+function rateBin(raw){
+if(isSuppRate(raw)) return 0;
+
+const n=toNumberClean(raw);
+
+if(n>0 && n<=8) return 1;
+if(n<=9.9) return 2;
+if(n<=11) return 3;
+if(n<=13) return 4;
+
+return 5;
+}
+
+function caseBin(isCombined,v){
+if(v==null) return null;
+
+if(isCombined){
+return v<5?0:v<=25?1:v<=40?2:v<=60?3:4;
+}
+
+return v<5?0:v<=10?1:v<=20?2:v<=40?3:4;
+}
+
+const caseLabels=isCombined =>
+isCombined?
+["<5","5–25","26–40","41–60","Over 60"]:
+["<5","5–10","11–20","21–40","Over 40"];
+
+const rateLabels=[
+"Suppressed",
+"0–8.0",
+"8.1–9.9",
+"10.0–11.0",
+"11.0–13.0",
+"Over 13"
+];
+
+const fmtCase=raw=>{
+if(raw==null) return "—";
+
+const s=String(raw).trim();
+
+if(!s) return "—";
+if(s==="<5") return "<5";
+
+const n=Number(s);
+return Number.isFinite(n)?n.toFixed(0):"—";
+};
+
+const fmtRate=raw=>{
+const n=toNumberClean(raw);
+
+if(!Number.isFinite(n)||n===0) return "Suppressed";
+
+return n.toFixed(1);
+};
+
+function extractPeriods(headers){
+
+const rx=/_(\d{4})_(\d{4})(?:_|$)/;
+
+const map=new Map();
+
+for(const h of headers){
+
+const m=String(h).match(rx);
+
+if(m){
+
+const start=Number(m[1]);
+const end=Number(m[2]);
+
+map.set(`${start}_${end}`,{start,end});
+
+}
+
+}
+
+return Array.from(map.entries())
+.map(([key,v])=>({key,...v}))
+.sort((a,b)=>(a.start-b.start)||(a.end-b.end));
+
+}
+
+$status.textContent="Loading files…";
+
+const [geo,csvText]=await Promise.all([
+fetch(GEOJSON_URL).then(r=>r.json()),
+fetch(CSV_URL).then(r=>r.text())
+]);
+
+const parsed=Papa.parse(csvText,{
+header:true,
+dynamicTyping:false,
+skipEmptyLines:true
 });
+
+const rows=parsed.data||[];
+const headers=parsed.meta.fields;
+
+const periods=extractPeriods(headers);
+
+const first=periods[0];
+const last=periods[periods.length-1];
+
+const combinedKey=`${first.start}_${last.end}`;
+
+$period.innerHTML="";
+
+for(const p of periods){
+
+const opt=document.createElement("option");
+opt.value=p.key;
+opt.textContent=`${p.start}–${p.end}`;
+
+$period.appendChild(opt);
+
+}
+
+if(periods.length>1){
+
+const opt=document.createElement("option");
+
+opt.value=combinedKey;
+opt.textContent=`${first.start}–${last.end} (Combined time period)`;
+
+$period.appendChild(opt);
+
+}
+
+$period.value=periods[0].key;
+
+const dataIndex={};
+
+rows.forEach(r=>{
+const key=norm(r[CSV_JOIN]);
+if(key) dataIndex[key]=r;
+});
+
+const map=L.map("map").setView([41.68,-71.55],9);
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{
+maxZoom:18,
+attribution:"© OpenStreetMap contributors"
+}
+).addTo(map);
+
+let layer;
+
+function buildLegend(){
+
+const metricKey=$metric.value;
+
+let html=`<div style="font-weight:800;margin-bottom:8px;">Legend — ${METRICS[metricKey].label}</div>`;
+
+if(metricKey==="rate"){
+
+for(let i=0;i<rateLabels.length;i++){
+
+html+= i===0
+? `<div class="row"><span class="swatch hatch"></span>${rateLabels[i]}</div>`
+: `<div class="row"><span class="swatch" style="background:${RATE_COLORS[i]}"></span>${rateLabels[i]}</div>`;
+
+}
+
+}else{
+
+const labels=caseLabels(false);
+
+for(let i=0;i<labels.length;i++){
+
+html+=`<div class="row"><span class="swatch" style="background:${CASE_COLORS[i]}"></span>${labels[i]}</div>`;
+
+}
+
+}
+
+$legend.innerHTML=html;
+
+}
+
+function render(){
+
+buildLegend();
+
+if(layer) layer.remove();
+
+layer=L.geoJSON(geo,{
+style:{color:BORDER_COLOR,weight:BORDER_WEIGHT,fillOpacity:1},
+onEachFeature:(f,l)=>{
+l.bindPopup(`<b>${f.properties[GEO_JOIN]}</b>`);
+}
+}).addTo(map);
+
+$status.textContent="Ready";
+
+}
+
+$period.addEventListener("change",render);
+$metric.addEventListener("change",render);
+
+render();
+
+})();
+
 </script>
+
 </body>
 </html>
